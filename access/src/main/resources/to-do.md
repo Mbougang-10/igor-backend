@@ -130,7 +130,7 @@ Gérer la hiérarchie
 
 Vérifier les permissions via RBAC
 
-🔹 3.3 — UserService
+🔹 3.3 — UserService ---------------------(ok)
 
 Créer un utilisateur
 
@@ -168,11 +168,11 @@ Toute logique ici est une dette
 
 🔹 Controllers à créer
 
-TenantController
+TenantController ----------(ok)
 
-UserController
+UserController -----------(ok)
 
-ResourceController
+ResourceController --------(ok)
 
 RoleAssignmentController
 

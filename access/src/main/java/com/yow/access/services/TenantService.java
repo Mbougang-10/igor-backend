@@ -20,7 +20,6 @@ public class TenantService {
     private final UserRoleResourceRepository urrRepository;
     private final AuditLogService auditLogService;
 
-
     public TenantService(
             TenantRepository tenantRepository,
             ResourceRepository resourceRepository,
@@ -37,15 +36,20 @@ public class TenantService {
         this.auditLogService = auditLogService;
     }
 
+    /* ============================
+       CREATE TENANT
+       ============================ */
     @Transactional
-    public void createTenant(String name, String code, UUID creatorUserId) {
-
+    public void createTenant(
+            String name,
+            String code,
+            UUID creatorUserId
+    ) {
         AppUser creator =
                 userRepository.findById(creatorUserId)
-                        .orElseThrow(() -> new IllegalStateException("Creator user not found"));
+                        .orElseThrow(() -> new IllegalStateException("User not found"));
 
         if (tenantRepository.existsByCode(code)) {
-
             auditLogService.log(
                     null,
                     creator,
@@ -58,7 +62,6 @@ public class TenantService {
                     null,
                     null
             );
-
             throw new TenantAlreadyExistsException(code);
         }
 
@@ -71,16 +74,14 @@ public class TenantService {
 
         Resource root =
                 ResourceFactory.createRootResource(tenant, name);
-
         resourceRepository.save(root);
 
         Role adminRole =
                 roleRepository.findByName("TENANT_ADMIN")
-                        .orElseThrow(() -> new IllegalStateException("TENANT_ADMIN role missing"));
+                        .orElseThrow(() -> new IllegalStateException("TENANT_ADMIN missing"));
 
         UserRoleResource urr =
                 UserRoleResourceFactory.create(creator, adminRole, root);
-
         urrRepository.save(urr);
 
         auditLogService.log(
@@ -91,26 +92,21 @@ public class TenantService {
                 "TENANT",
                 tenant.getId(),
                 "SUCCESS",
-                "Tenant successfully created",
+                "Tenant created",
                 null,
                 null
         );
     }
 
-
+    /* ============================
+       READ
+       ============================ */
     public Tenant getTenantById(UUID tenantId) {
         return tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalStateException("Tenant not found"));
     }
 
-
-    public List<Tenant> findTenantsAccessibleByUser(UUID userId) {
-        return tenantRepository.findTenantsAccessibleByUser(userId);
-    }
-
-    @Transactional(readOnly = true)
     public List<Tenant> getTenantsAccessibleByUser(UUID userId) {
         return tenantRepository.findTenantsAccessibleByUser(userId);
     }
-
 }

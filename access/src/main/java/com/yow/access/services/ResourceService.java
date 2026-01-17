@@ -1,7 +1,8 @@
 package com.yow.access.services;
 
 import com.yow.access.dto.ResourceTreeResponse;
-import com.yow.access.entities.*;
+import com.yow.access.entities.Resource;
+import com.yow.access.entities.ResourceFactory;
 import com.yow.access.exceptions.AccessDeniedException;
 import com.yow.access.repositories.ResourceRepository;
 import org.springframework.stereotype.Service;
@@ -27,56 +28,29 @@ public class ResourceService {
         this.auditLogService = auditLogService;
     }
 
-    /**
-     * Create a child resource under a parent resource (RBAC protected).
-     */
+    /* =========================================================
+       CREATE RESOURCE
+       ========================================================= */
     @Transactional
-    public Resource createChildResource(
+    public void createChildResource(
             UUID actorUserId,
             UUID parentResourceId,
-            String resourceName,
-            String resourceType
+            String name,
+            String type
     ) {
-        Resource parent =
-                resourceRepository.findById(parentResourceId)
-                        .orElseThrow(() -> new IllegalStateException("Parent resource not found"));
+        Resource parent = loadResource(parentResourceId);
 
-        // 🔐 RBAC
-        try {
-            authorizationService.checkPermission(
-                    actorUserId,
-                    parent.getId(),
-                    "RESOURCE_CREATE"
-            );
-        } catch (AccessDeniedException ex) {
+        authorizationService.checkPermission(
+                actorUserId,
+                parent.getId(),
+                "RESOURCE_CREATE"
+        );
 
-            auditLogService.log(
-                    parent.getTenant(),
-                    null,
-                    parent,
-                    "CREATE_RESOURCE",
-                    "RESOURCE",
-                    null,
-                    "FAILURE",
-                    ex.getMessage(),
-                    null,
-                    null
-            );
-
-            throw ex;
-        }
-
-        //  Create resource
         Resource child =
-                ResourceFactory.createChildResource(
-                        parent,
-                        resourceName,
-                        resourceType
-                );
+                ResourceFactory.createChildResource(parent, name, type);
 
         resourceRepository.save(child);
 
-        //  Audit SUCCESS
         auditLogService.log(
                 parent.getTenant(),
                 null,
@@ -85,15 +59,15 @@ public class ResourceService {
                 "RESOURCE",
                 child.getId(),
                 "SUCCESS",
-                "Resource created under parent " + parent.getId(),
+                "Child resource created",
                 null,
                 null
         );
-
-        return child;
     }
 
-
+    /* =========================================================
+       READ TREE
+       ========================================================= */
     @Transactional(readOnly = true)
     public ResourceTreeResponse getResourceTree(
             UUID userId,
@@ -105,10 +79,7 @@ public class ResourceService {
                 "RESOURCE_READ"
         );
 
-        Resource root =
-                resourceRepository.findById(rootResourceId)
-                        .orElseThrow(() -> new IllegalStateException("Resource not found"));
-
+        Resource root = loadResource(rootResourceId);
         return buildTree(root);
     }
 
@@ -126,5 +97,84 @@ public class ResourceService {
         return node;
     }
 
+    /* =========================================================
+       DELETE RESOURCE
+       ========================================================= */
+    @Transactional
+    public void deleteResource(
+            UUID userId,
+            UUID resourceId
+    ) {
+        Resource resource = loadResource(resourceId);
 
+        authorizationService.checkPermission(
+                userId,
+                resourceId,
+                "RESOURCE_DELETE"
+        );
+
+        resourceRepository.delete(resource);
+
+        auditLogService.log(
+                resource.getTenant(),
+                null,
+                resource,
+                "DELETE_RESOURCE",
+                "RESOURCE",
+                resourceId,
+                "SUCCESS",
+                "Resource deleted",
+                null,
+                null
+        );
+    }
+
+    /* =========================================================
+       MOVE RESOURCE
+       ========================================================= */
+    @Transactional
+    public void moveResource(
+            UUID userId,
+            UUID resourceId,
+            UUID newParentId
+    ) {
+        Resource resource = loadResource(resourceId);
+        Resource newParent = loadResource(newParentId);
+
+        authorizationService.checkPermission(
+                userId,
+                resourceId,
+                "RESOURCE_MOVE"
+        );
+
+        resource.setParent(newParent);
+        resource.setPath(
+                newParent.getPath() + "/" + resource.getName()
+        );
+
+        resourceRepository.save(resource);
+
+        auditLogService.log(
+                resource.getTenant(),
+                null,
+                resource,
+                "MOVE_RESOURCE",
+                "RESOURCE",
+                resourceId,
+                "SUCCESS",
+                "Resource moved",
+                null,
+                null
+        );
+    }
+
+    /* =========================================================
+       UTIL
+       ========================================================= */
+    private Resource loadResource(UUID resourceId) {
+        return resourceRepository.findById(resourceId)
+                .orElseThrow(() ->
+                        new IllegalStateException("Resource not found: " + resourceId)
+                );
+    }
 }

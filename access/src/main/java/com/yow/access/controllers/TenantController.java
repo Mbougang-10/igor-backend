@@ -33,9 +33,9 @@ public class TenantController {
         this.userContext = userContext;
     }
 
-    /**
-     * CREATE TENANT
-     */
+    /* ============================
+       CREATE TENANT (GLOBAL)
+       ============================ */
     @PostMapping
     public ResponseEntity<Void> createTenant(
             @Valid @RequestBody CreateTenantRequest request
@@ -56,10 +56,9 @@ public class TenantController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-
-    /**
-     * GET TENANT (RBAC protected)
-     */
+    /* ============================
+       GET ONE TENANT (RBAC)
+       ============================ */
     @GetMapping("/{tenantId}")
     public ResponseEntity<TenantResponse> getTenant(
             @PathVariable UUID tenantId
@@ -69,36 +68,19 @@ public class TenantController {
         authorizationService.checkPermission(
                 userId,
                 tenantId,
-                "TENANT_READ"
+                Permissions.TENANT_READ
         );
 
         Tenant tenant = tenantService.getTenantById(tenantId);
 
-        return ResponseEntity.ok(TenantResponse.fromEntity(tenant));
-    }
-
-    /**
-     * LIST TENANTS ACCESSIBLE BY USER
-     */
-    @GetMapping
-    public ResponseEntity<List<TenantResponse>> listTenants() {
-
-        UUID userId = userContext.getUserId();
-
-        authorizationService.checkGlobalPermission(
-                userId,
-                Permissions.TENANT_LIST
+        return ResponseEntity.ok(
+                TenantResponse.fromEntity(tenant)
         );
-
-        List<TenantResponse> response =
-                tenantService.findTenantsAccessibleByUser(userId)
-                        .stream()
-                        .map(TenantResponse::fromEntity)
-                        .toList();
-
-        return ResponseEntity.ok(response);
     }
 
+    /* ============================
+       LIST TENANTS (RBAC FILTERED)
+       ============================ */
     @GetMapping
     public ResponseEntity<List<TenantResponse>> getTenants() {
 
@@ -112,6 +94,4 @@ public class TenantController {
 
         return ResponseEntity.ok(tenants);
     }
-
-
 }
