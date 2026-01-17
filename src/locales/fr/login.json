@@ -1,0 +1,15 @@
+{
+    "title": "Bienvenue dans votre Gestionnaire de Communauté",
+    "signInTab": "Se connecter",
+    "createOrgTab": "Créer une Organisation",
+    "email": "Adresse email",
+    "password": "Mot de passe",
+    "orgName": "Nom de l'organisation",
+    "orgLogo": "Logo de l'organisation (optionnel)",
+    "signInButton": "Se connecter",
+    "createButton": "Créer l'organisation",
+    "noAccount": "Pas encore d'organisation ?",
+    "hasAccount": "Vous avez déjà un compte ?",
+    "switchToCreate": "Créez-en une maintenant",
+    "switchToSignIn": "Connectez-vous ici"
+  }

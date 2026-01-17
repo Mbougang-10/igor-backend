@@ -1,0 +1,20 @@
+{
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "title": "Welcome to Your Community Manager",
+    "signInTab": "Sign In",
+    "createOrgTab": "Create Organization",
+    "email": "Email Address",
+    "password": "Password",
+    "orgName": "Organization Name",
+    "orgLogo": "Organization Logo (optional)",
+    "signInButton": "Sign In",
+    "createButton": "Create Organization",
+    "noAccount": "Don't have an organization yet?",
+    "hasAccount": "Already have an account?",
+    "switchToCreate": "Create one now",
+    "switchToSignIn": "Sign in here"
+  }
