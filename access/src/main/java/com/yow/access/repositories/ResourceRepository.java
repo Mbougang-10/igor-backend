@@ -14,5 +14,8 @@ public interface ResourceRepository extends JpaRepository<Resource, UUID> {
     List<Resource> findAllByParent(Resource parent);
 
     boolean existsByTenantAndPath(Tenant tenant, String path);
+
+    List<Resource> findByParentId(UUID parentId);
+
 }
 

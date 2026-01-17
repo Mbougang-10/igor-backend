@@ -107,4 +107,10 @@ public class TenantService {
     public List<Tenant> findTenantsAccessibleByUser(UUID userId) {
         return tenantRepository.findTenantsAccessibleByUser(userId);
     }
+
+    @Transactional(readOnly = true)
+    public List<Tenant> getTenantsAccessibleByUser(UUID userId) {
+        return tenantRepository.findTenantsAccessibleByUser(userId);
+    }
+
 }

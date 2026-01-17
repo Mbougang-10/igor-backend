@@ -99,4 +99,19 @@ public class TenantController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<TenantResponse>> getTenants() {
+
+        UUID userId = userContext.getUserId();
+
+        List<TenantResponse> tenants =
+                tenantService.getTenantsAccessibleByUser(userId)
+                        .stream()
+                        .map(TenantResponse::fromEntity)
+                        .toList();
+
+        return ResponseEntity.ok(tenants);
+    }
+
+
 }

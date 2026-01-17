@@ -1,11 +1,13 @@
 package com.yow.access.services;
 
+import com.yow.access.dto.ResourceTreeResponse;
 import com.yow.access.entities.*;
 import com.yow.access.exceptions.AccessDeniedException;
 import com.yow.access.repositories.ResourceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -64,7 +66,7 @@ public class ResourceService {
             throw ex;
         }
 
-        // 🏗️ Create resource
+        //  Create resource
         Resource child =
                 ResourceFactory.createChildResource(
                         parent,
@@ -74,7 +76,7 @@ public class ResourceService {
 
         resourceRepository.save(child);
 
-        // 🧾 Audit SUCCESS
+        //  Audit SUCCESS
         auditLogService.log(
                 parent.getTenant(),
                 null,
@@ -90,4 +92,39 @@ public class ResourceService {
 
         return child;
     }
+
+
+    @Transactional(readOnly = true)
+    public ResourceTreeResponse getResourceTree(
+            UUID userId,
+            UUID rootResourceId
+    ) {
+        authorizationService.checkPermission(
+                userId,
+                rootResourceId,
+                "RESOURCE_READ"
+        );
+
+        Resource root =
+                resourceRepository.findById(rootResourceId)
+                        .orElseThrow(() -> new IllegalStateException("Resource not found"));
+
+        return buildTree(root);
+    }
+
+    private ResourceTreeResponse buildTree(Resource resource) {
+        ResourceTreeResponse node =
+                ResourceTreeResponse.fromEntity(resource);
+
+        List<Resource> children =
+                resourceRepository.findByParentId(resource.getId());
+
+        for (Resource child : children) {
+            node.addChild(buildTree(child));
+        }
+
+        return node;
+    }
+
+
 }
