@@ -3,7 +3,10 @@ package com.yow.access.controllers;
 import com.yow.access.config.security.Permissions;
 import com.yow.access.dto.CreateTenantRequest;
 import com.yow.access.dto.TenantResponse;
+import com.yow.access.dto.TenantStatsResponse;
 import com.yow.access.entities.Tenant;
+import com.yow.access.repositories.ResourceRepository;
+import com.yow.access.repositories.UserRoleResourceRepository;
 import com.yow.access.services.AuthorizationService;
 import com.yow.access.services.TenantService;
 import com.yow.access.config.security.context.AuthenticatedUserContext;
@@ -22,15 +25,21 @@ public class TenantController {
     private final TenantService tenantService;
     private final AuthorizationService authorizationService;
     private final AuthenticatedUserContext userContext;
+    private final ResourceRepository resourceRepository;
+    private final UserRoleResourceRepository urrRepository;
 
     public TenantController(
             TenantService tenantService,
             AuthorizationService authorizationService,
-            AuthenticatedUserContext userContext
+            AuthenticatedUserContext userContext,
+            ResourceRepository resourceRepository,
+            UserRoleResourceRepository urrRepository
     ) {
         this.tenantService = tenantService;
         this.authorizationService = authorizationService;
         this.userContext = userContext;
+        this.resourceRepository = resourceRepository;
+        this.urrRepository = urrRepository;
     }
 
     /* ============================
@@ -93,5 +102,18 @@ public class TenantController {
                         .toList();
 
         return ResponseEntity.ok(tenants);
+    }
+
+    /* ============================
+       GET TENANT STATS
+       ============================ */
+    @GetMapping("/{tenantId}/stats")
+    public ResponseEntity<TenantStatsResponse> getTenantStats(
+            @PathVariable UUID tenantId
+    ) {
+        long userCount = urrRepository.countDistinctUsersByTenantId(tenantId);
+        long resourceCount = resourceRepository.countByTenantId(tenantId);
+
+        return ResponseEntity.ok(new TenantStatsResponse(userCount, resourceCount));
     }
 }

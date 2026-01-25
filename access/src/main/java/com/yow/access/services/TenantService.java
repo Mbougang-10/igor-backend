@@ -107,6 +107,17 @@ public class TenantService {
     }
 
     public List<Tenant> getTenantsAccessibleByUser(UUID userId) {
-        return tenantRepository.findTenantsAccessibleByUser(userId);
+        // Récupérer toutes les ressources auxquelles l'utilisateur a accès
+        // Utiliser la méthode avec JOIN FETCH pour éviter les problèmes de lazy loading
+        List<UserRoleResource> userRoles = urrRepository.findAllByUserIdWithResourceAndTenant(userId);
+
+        // Filtrer pour ne garder que les ressources ROOT (sans parent)
+        // et extraire les tenants uniques
+        return userRoles.stream()
+                .map(UserRoleResource::getResource)
+                .filter(resource -> resource.getParent() == null)
+                .map(Resource::getTenant)
+                .distinct()
+                .toList();
     }
 }

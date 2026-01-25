@@ -17,5 +17,11 @@ public interface ResourceRepository extends JpaRepository<Resource, UUID> {
 
     List<Resource> findByParentId(UUID parentId);
 
+    // Trouver les ressources racines d'un tenant (parent_id = NULL)
+    List<Resource> findByTenantIdAndParentIsNull(UUID tenantId);
+
+    // Compter les ressources d'un tenant
+    long countByTenantId(UUID tenantId);
+
 }
 

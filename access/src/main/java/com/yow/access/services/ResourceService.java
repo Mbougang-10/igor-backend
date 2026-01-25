@@ -98,6 +98,25 @@ public class ResourceService {
     }
 
     /* =========================================================
+       GET ROOT RESOURCES BY TENANT
+       ========================================================= */
+    @Transactional(readOnly = true)
+    public List<ResourceTreeResponse> getRootResourcesByTenant(UUID tenantId) {
+        List<Resource> roots = resourceRepository.findByTenantIdAndParentIsNull(tenantId);
+        return roots.stream()
+                .map(this::buildTree)
+                .toList();
+    }
+
+    /* =========================================================
+       COUNT RESOURCES BY TENANT
+       ========================================================= */
+    @Transactional(readOnly = true)
+    public long countResourcesByTenant(UUID tenantId) {
+        return resourceRepository.countByTenantId(tenantId);
+    }
+
+    /* =========================================================
        DELETE RESOURCE
        ========================================================= */
     @Transactional

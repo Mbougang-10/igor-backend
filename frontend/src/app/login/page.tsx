@@ -14,37 +14,76 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { api } from '@/services/api';
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock signup for admin + organization creation
-  const handleSignup = () => {
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Signup form state
+  const [orgName, setOrgName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Real login with backend API
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Mock: create organization and admin
-    localStorage.setItem('userRole', 'admin');
-    localStorage.setItem('organizationName', 'New Organization');
+    try {
+      const response = await api.post('/api/auth/login', {
+        email: loginEmail,
+        password: loginPassword,
+      });
 
-    // Simulate API call
-    setTimeout(() => {
-      alert('Organisation créée avec succès ! Vous êtes l\'administrateur.');
+      const { token, userId, email, username } = response.data;
+
+      // Store token and user info
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('user_id', userId);
+      localStorage.setItem('user_email', email);
+      localStorage.setItem('user_name', username);
+      localStorage.setItem('userRole', 'admin'); // Default for now
+
+      // Redirect to dashboard
       router.push('/dashboard');
-    }, 1000);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Email ou mot de passe incorrect');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Mock login with role selection (for testing)
-  const handleLogin = (role: 'admin' | 'manager' | 'member') => {
+  // Signup - Create organization (to be implemented with backend)
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
-    localStorage.setItem('userRole', role);
-    setTimeout(() => {
-      if (role === 'admin') {
-        router.push('/dashboard');
-      } else {
-        router.push('/community');
-      }
-    }, 1000);
+    setError(null);
+
+    if (signupPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // For now, show that signup needs backend implementation
+      alert('La création d\'organisation nécessite une implémentation backend supplémentaire. Utilisez la connexion avec les identifiants existants.');
+      setIsLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la création');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,6 +97,12 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Se connecter</TabsTrigger>
@@ -66,85 +111,137 @@ export default function LoginPage() {
 
             {/* Sign In Tab */}
             <TabsContent value="signin" className="space-y-6 mt-6">
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="email-login">Email</Label>
-                  <Input id="email-login" type="email" placeholder="admin@exemple.com" required />
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="email-login">Email</Label>
+                    <Input
+                      id="email-login"
+                      type="email"
+                      placeholder="admin@example.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password-login">Mot de passe</Label>
+                    <Input
+                      id="password-login"
+                      type="password"
+                      placeholder="admin123"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="password-login">Mot de passe</Label>
-                  <Input id="password-login" type="password" required />
-                </div>
-              </div>
 
-              {/* Mock role buttons for testing */}
-              <div className="grid gap-3">
-                <Button onClick={() => handleLogin('admin')} className="bg-red-600 hover:bg-red-700">
-                  Connexion Admin
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Connexion...' : 'Se connecter'}
                 </Button>
-                <Button onClick={() => handleLogin('manager')} className="bg-blue-600 hover:bg-blue-700">
-                  Connexion Manager
-                </Button>
-                <Button onClick={() => handleLogin('member')} className="bg-green-600 hover:bg-green-700">
-                  Connexion Membre
-                </Button>
-              </div>
+
+                {/* Test credentials hint */}
+                <div className="text-center text-sm text-gray-500 mt-4 p-3 bg-gray-50 rounded">
+                  <p className="font-medium">Identifiants de test :</p>
+                  <p>Email: admin@example.com</p>
+                  <p>Mot de passe: admin123</p>
+                </div>
+              </form>
             </TabsContent>
 
             {/* Signup Tab - Admin creates organization */}
             <TabsContent value="signup" className="space-y-6 mt-6">
-              <div className="text-center mb-4">
-                <p className="text-sm text-gray-600">
-                  Créez votre organisation — vous serez l'administrateur principal
-                </p>
-              </div>
-
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="org-name">Nom de l'organisation</Label>
-                  <Input id="org-name" placeholder="Ma Super Entreprise" required />
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600">
+                    Créez votre organisation — vous serez l'administrateur principal
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4">
                   <div>
-                    <Label htmlFor="first-name">Prénom</Label>
-                    <Input id="first-name" placeholder="Jean" required />
+                    <Label htmlFor="org-name">Nom de l'organisation</Label>
+                    <Input
+                      id="org-name"
+                      placeholder="Ma Super Entreprise"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      required
+                    />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="first-name">Prénom</Label>
+                      <Input
+                        id="first-name"
+                        placeholder="Jean"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="last-name">Nom</Label>
+                      <Input
+                        id="last-name"
+                        placeholder="Dupont"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <Label htmlFor="last-name">Nom</Label>
-                    <Input id="last-name" placeholder="Dupont" required />
+                    <Label htmlFor="email-signup">Email</Label>
+                    <Input
+                      id="email-signup"
+                      type="email"
+                      placeholder="jean.dupont@exemple.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="password-signup">Mot de passe</Label>
+                      <Input
+                        id="password-signup"
+                        type="password"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="confirm-password">Confirmer</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="email-signup">Email</Label>
-                  <Input id="email-signup" type="email" placeholder="jean.dupont@exemple.com" required />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="password-signup">Mot de passe</Label>
-                    <Input id="password-signup" type="password" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirm-password">Confirmer</Label>
-                    <Input id="confirm-password" type="password" required />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="logo">Logo de l'organisation (facultatif)</Label>
-                  <Input id="logo" type="file" accept="image/*" />
-                </div>
-              </div>
-
-              <Button 
-                onClick={handleSignup} 
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                disabled={isLoading}
-              >
-                Créer mon organisation
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Création...' : 'Créer mon organisation'}
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
         </CardContent>

@@ -4,7 +4,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- =========================
--- USER (IDENTITÉ EXPOSÉE)
+-- USER (IDENTITE EXPOSEE)
 -- =========================
 CREATE TABLE app_user (
                           id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -16,7 +16,7 @@ CREATE TABLE app_user (
 );
 
 -- =========================
--- TENANT (RACINE MÉTIER)
+-- TENANT (RACINE METIER)
 -- =========================
 CREATE TABLE tenant (
                         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,12 +27,12 @@ CREATE TABLE tenant (
 );
 
 -- =========================
--- RESOURCE (HIÉRARCHIQUE, INTERNE)
+-- RESOURCE (HIERARCHIQUE, INTERNE)
 -- =========================
 CREATE TABLE resource (
-                          id              BIGSERIAL PRIMARY KEY,
+                          id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                           tenant_id       UUID NOT NULL,
-                          parent_id       BIGINT,
+                          parent_id       UUID,
                           type            VARCHAR(50) NOT NULL,
                           name            VARCHAR(150) NOT NULL,
                           path            VARCHAR(500),
@@ -90,12 +90,12 @@ CREATE TABLE role_permission (
 );
 
 -- =========================
--- USER_ROLE_RESOURCE (CŒUR RBAC)
+-- USER_ROLE_RESOURCE (COEUR RBAC)
 -- =========================
 CREATE TABLE user_role_resource (
                                     user_id         UUID NOT NULL,
                                     role_id         SMALLINT NOT NULL,
-                                    resource_id     BIGINT NOT NULL,
+                                    resource_id     UUID NOT NULL,
                                     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
                                     CONSTRAINT pk_user_role_resource
@@ -118,7 +118,7 @@ CREATE TABLE user_role_resource (
 );
 
 -- =========================
--- AUDIT_LOG (VOLUMÉTRIE, TRAÇABILITÉ)
+-- AUDIT_LOG (TRACABILITE)
 -- =========================
 CREATE TABLE audit_log (
                            id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -126,8 +126,8 @@ CREATE TABLE audit_log (
                            user_id         UUID,
                            action          VARCHAR(100) NOT NULL,
                            target_type     VARCHAR(50),
-                           target_id       BIGINT,
-                           resource_id     BIGINT,
+                           target_id       UUID,
+                           resource_id     UUID,
                            outcome         VARCHAR(20) NOT NULL,
                            message         TEXT,
                            ip_address      VARCHAR(45),

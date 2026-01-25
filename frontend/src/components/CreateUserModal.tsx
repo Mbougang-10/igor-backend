@@ -1,6 +1,7 @@
 // src/components/CreateUserModal.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { api } from '@/services/api';
 
 interface CreateUserModalProps {
   open: boolean;
@@ -20,20 +22,57 @@ interface CreateUserModalProps {
 }
 
 export default function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
-  // Mock pour les rôles et départements (à remplacer par l'API plus tard)
-  const roles = [
-    { value: 'admin', label: 'Administrateur' },
-    { value: 'manager', label: 'Manager de département' },
-    { value: 'member', label: 'Membre' },
-  ];
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const departments = [
-    { value: 'none', label: 'Aucun (accès global)' },
-    { value: '1', label: 'Ressources Humaines' },
-    { value: '4', label: 'Recrutement' },
-    { value: '2', label: 'Marketing' },
-    { value: '3', label: 'IT' },
-  ];
+  // Réinitialiser le formulaire quand la modal s'ouvre
+  useEffect(() => {
+    if (open) {
+      setUsername('');
+      setEmail('');
+      setError(null);
+      setSuccess(null);
+    }
+  }, [open]);
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!username.trim()) {
+      setError('Le nom d\'utilisateur est requis');
+      return;
+    }
+    if (!email.trim()) {
+      setError('L\'email est requis');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      await api.post('/api/auth/users', {
+        username: username.trim(),
+        email: email.trim(),
+      });
+
+      setSuccess('Utilisateur créé avec succès. Un email d\'activation sera envoyé.');
+
+      // Fermer après un délai et recharger
+      setTimeout(() => {
+        onOpenChange(false);
+        window.location.reload();
+      }, 2000);
+
+    } catch (err: any) {
+      console.error('Erreur lors de la création:', err);
+      setError(err.message || 'Erreur lors de la création de l\'utilisateur');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -41,84 +80,63 @@ export default function CreateUserModal({ open, onOpenChange }: CreateUserModalP
         <DialogHeader>
           <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
           <DialogDescription>
-            Ajoutez un membre à votre organisation et définissez ses permissions.
+            Ajoutez un membre à votre organisation. Un email d'activation lui sera envoyé.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="firstName">Prénom</Label>
-              <Input id="firstName" placeholder="Marie" required />
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+              {error}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="lastName">Nom</Label>
-              <Input id="lastName" placeholder="Dupont" required />
+          )}
+
+          {success && (
+            <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
+              {success}
             </div>
+          )}
+
+          <div className="grid gap-2">
+            <Label htmlFor="username">Nom d'utilisateur *</Label>
+            <Input
+              id="username"
+              placeholder="marie.dupont"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="marie.dupont@hello.org" required />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input id="password" type="password" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirmer</Label>
-              <Input id="confirmPassword" type="password" required />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="role">Rôle</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Choisir un rôle" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role.value} value={role.value}>
-                    {role.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="department">Département affecté (facultatif)</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Aucun département" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.value} value={dept.value}>
-                    {dept.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="marie.dupont@hello.org"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
             <p className="text-sm text-gray-500">
-              Si un département est choisi, l'utilisateur aura accès aux données de ce département.
+              L'utilisateur recevra un email pour activer son compte et définir son mot de passe.
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Annuler
           </Button>
-          <Button onClick={() => {
-            // TODO : Envoyer à l'API
-            alert('Utilisateur créé avec succès !');
-            onOpenChange(false);
-          }}>
-            Créer l'utilisateur
+          <Button onClick={handleSubmit} disabled={submitting || !!success}>
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Création...
+              </>
+            ) : (
+              'Créer l\'utilisateur'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

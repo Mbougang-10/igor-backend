@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -89,5 +90,30 @@ public class ResourceController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET ROOT RESOURCES BY TENANT
+     * Retourne l'arbre complet des ressources d'un tenant
+     */
+    @GetMapping("/tenant/{tenantId}")
+    public ResponseEntity<List<ResourceTreeResponse>> getResourcesByTenant(
+            @PathVariable UUID tenantId
+    ) {
+        return ResponseEntity.ok(
+                resourceService.getRootResourcesByTenant(tenantId)
+        );
+    }
+
+    /**
+     * COUNT RESOURCES BY TENANT
+     */
+    @GetMapping("/tenant/{tenantId}/count")
+    public ResponseEntity<Long> countResourcesByTenant(
+            @PathVariable UUID tenantId
+    ) {
+        return ResponseEntity.ok(
+                resourceService.countResourcesByTenant(tenantId)
+        );
     }
 }

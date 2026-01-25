@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-auth-fields
+      author: gauss
+      changes:
+        - addColumn:
+            tableName: app_user
+            columns:
+              - column:
+                  name: must_change_password
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: activation_token
+                  type: varchar(255)
+              - column:
+                  name: activation_token_expiry
+                  type: timestamp
+              - column:
+                  name: account_activated
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_user_created_by
+                    references: app_user(id)

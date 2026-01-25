@@ -1,21 +1,63 @@
 // src/app/(app)/dashboard/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Building2, TreePine, Plus } from 'lucide-react';
+import { Users, Building2, TreePine, Plus, Loader2 } from 'lucide-react';
 import CreateDepartmentModal from '@/components/CreateDepartmentModal';
 import HierarchyTree from '@/components/HierarchyTree';
+import { api } from '@/services/api';
 
 interface Department {
   id: string;
   name: string;
 }
 
+interface Tenant {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface TenantStats {
+  userCount: number;
+  resourceCount: number;
+}
+
 export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState<Department | null>(null);
+  const [stats, setStats] = useState<TenantStats>({ userCount: 0, resourceCount: 0 });
+  const [tenantName, setTenantName] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoading(true);
+
+        // 1. Récupérer la liste des tenants accessibles
+        const tenantsResponse = await api.get<Tenant[]>('/api/tenants');
+        const tenants = tenantsResponse.data;
+
+        if (tenants.length > 0) {
+          const tenant = tenants[0];
+          setTenantName(tenant.name);
+
+          // 2. Récupérer les stats du tenant
+          const statsResponse = await api.get<TenantStats>(`/api/tenants/${tenant.id}/stats`);
+          setStats(statsResponse.data);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
 
   const handleCreateDepartment = () => {
     setSelectedParent(null); // Pas de parent = département principal
@@ -31,7 +73,10 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        <p className="text-gray-600 mt-2">Bienvenue dans votre espace d'administration</p>
+        <p className="text-gray-600 mt-2">
+          Bienvenue dans votre espace d'administration
+          {tenantName && <span className="font-medium"> - {tenantName}</span>}
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -42,8 +87,16 @@ export default function DashboardPage() {
             <Users className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">1</p>
-            <p className="text-sm text-gray-600">Administrateur principal</p>
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            ) : (
+              <>
+                <p className="text-3xl font-bold">{stats.userCount}</p>
+                <p className="text-sm text-gray-600">
+                  {stats.userCount <= 1 ? 'Utilisateur actif' : 'Utilisateurs actifs'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -53,8 +106,16 @@ export default function DashboardPage() {
             <Building2 className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">3</p>
-            <p className="text-sm text-gray-600">Actifs dans l'organisation</p>
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            ) : (
+              <>
+                <p className="text-3xl font-bold">{stats.resourceCount}</p>
+                <p className="text-sm text-gray-600">
+                  {stats.resourceCount <= 1 ? 'Ressource dans l\'organisation' : 'Ressources dans l\'organisation'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -92,10 +153,10 @@ export default function DashboardPage() {
       </Card>
 
       {/* Modal unique — s'adapte selon le parent sélectionné */}
-      <CreateDepartmentModal 
-        open={modalOpen} 
-        onOpenChange={setModalOpen} 
-        parentDepartment={selectedParent} 
+      <CreateDepartmentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        parentDepartment={selectedParent}
       />
     </div>
   );
