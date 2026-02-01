@@ -66,4 +66,4 @@ databaseChangeLog:
             baseColumnNames: resource_id
             constraintName: fk_urr_resource
             referencedTableName: resource
-            referencedColumnNames: id
+            referencedColumnNames: idnpm

@@ -37,7 +37,7 @@ public class UserRoleResource {
     private Instant createdAt = Instant.now();
 
     // JPA only
-    protected UserRoleResource() {
+    public UserRoleResource() {
     }
 
     // Getters & Setters

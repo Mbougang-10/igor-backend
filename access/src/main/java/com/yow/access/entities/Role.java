@@ -36,7 +36,7 @@ public class Role {
     private Set<Permission> permissions = new HashSet<>();
 
     // JPA only
-    protected Role() {
+    public Role() {
     }
 
     // Getters & Setters

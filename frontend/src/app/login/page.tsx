@@ -58,8 +58,13 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Email ou mot de passe incorrect');
-    } finally {
+
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Email ou mot de passe incorrect';
+      setError(message);
+    }finally {
       setIsLoading(false);
     }
   };

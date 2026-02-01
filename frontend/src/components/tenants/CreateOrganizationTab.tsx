@@ -16,13 +16,11 @@ export default function CreateOrganizationTab() {
     e.preventDefault();
     if (!orgName.trim()) return;
 
-    try {
-      await create(orgName);
-      // Redirection après création réussie
+    const result = await create(orgName);
+    if (result.success) {
+      // Redirection vers la page des tenants après création
       router.push('/tenants');
-    } catch (err) {
-      // L'erreur est déjà gérée dans le hook
-      console.error('Failed to create tenant:', err);
+      router.refresh(); // Rafraîchir les données
     }
   }
 

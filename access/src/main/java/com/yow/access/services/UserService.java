@@ -1,18 +1,13 @@
 package com.yow.access.services;
 
 import com.yow.access.entities.*;
+import com.yow.access.exceptions.AccessDeniedException;
 import com.yow.access.repositories.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-/**
- * Service responsible for user lifecycle and RBAC assignments.
- *
- * Author: Alan Tchapda
- * Date: 2025-12-30
- */
 @Service
 public class UserService {
 
@@ -21,24 +16,27 @@ public class UserService {
     private final ResourceRepository resourceRepository;
     private final UserRoleResourceRepository urrRepository;
     private final AuthorizationService authorizationService;
+    private final AuditLogService auditLogService;
 
     public UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             ResourceRepository resourceRepository,
             UserRoleResourceRepository urrRepository,
-            AuthorizationService authorizationService
+            AuthorizationService authorizationService,
+            AuditLogService auditLogService
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.resourceRepository = resourceRepository;
         this.urrRepository = urrRepository;
         this.authorizationService = authorizationService;
+        this.auditLogService = auditLogService;
     }
 
-    /**
-     * Create a new user.
-     */
+    /* ============================
+       CREATE USER
+       ============================ */
     @Transactional
     public AppUser createUser(
             String username,
@@ -54,9 +52,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    /**
-     * Enable or disable a user.
-     */
+    /* ============================
+       ENABLE / DISABLE USER
+       ============================ */
     @Transactional
     public void setUserEnabled(UUID userId, boolean enabled) {
         AppUser user = userRepository.findById(userId)
@@ -65,9 +63,9 @@ public class UserService {
         user.setEnabled(enabled);
     }
 
-    /**
-     * Assign a role to a user on a resource.
-     */
+    /* ============================
+       ASSIGN ROLE (RBAC + AUDIT)
+       ============================ */
     @Transactional
     public void assignRole(
             UUID actorUserId,
@@ -75,35 +73,130 @@ public class UserService {
             Short roleId,
             UUID resourceId
     ) {
-        // 1️⃣ RBAC check
         Resource resource = resourceRepository.findById(resourceId)
                 .orElseThrow(() -> new IllegalStateException("Resource not found"));
 
-        boolean allowed = authorizationService.hasPermission(
-                actorUserId,
-                "ASSIGN_ROLE",
-                resource
-        );
+        AppUser actor = userRepository.findById(actorUserId)
+                .orElseThrow(() -> new IllegalStateException("Actor not found"));
 
-        if (!allowed) {
-            throw new SecurityException("Permission denied: ASSIGN_ROLE");
+        try {
+            authorizationService.checkPermission(
+                    actorUserId,
+                    resourceId,
+                    "ASSIGN_ROLE"
+            );
+
+            AppUser targetUser = userRepository.findById(targetUserId)
+                    .orElseThrow(() -> new IllegalStateException("Target user not found"));
+
+            Role role = roleRepository.findById(roleId)
+                    .orElseThrow(() -> new IllegalStateException("Role not found"));
+
+            UserRoleResource urr =
+                    UserRoleResourceFactory.create(
+                            targetUser,
+                            role,
+                            resource
+                    );
+
+            urrRepository.save(urr);
+
+            auditLogService.log(
+                    resource.getTenant(),
+                    actor,
+                    resource,
+                    "ASSIGN_ROLE",
+                    "USER_ROLE_RESOURCE",
+                    null,
+                    "SUCCESS",
+                    "Role assigned to user",
+                    null,
+                    null
+            );
+
+        } catch (AccessDeniedException ex) {
+
+            auditLogService.log(
+                    resource.getTenant(),
+                    actor,
+                    resource,
+                    "ASSIGN_ROLE",
+                    "USER_ROLE_RESOURCE",
+                    null,
+                    "FAILURE",
+                    ex.getMessage(),
+                    null,
+                    null
+            );
+
+            throw ex;
         }
+    }
 
-        // 2️⃣ Load entities
-        AppUser targetUser = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalStateException("Target user not found"));
+    /* ============================
+       REMOVE ROLE (RBAC + AUDIT)
+       ============================ */
+    @Transactional
+    public void removeRole(
+            UUID actorUserId,
+            UUID targetUserId,
+            Short roleId,
+            UUID resourceId
+    ) {
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new IllegalStateException("Resource not found"));
 
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IllegalStateException("Role not found"));
+        AppUser actor = userRepository.findById(actorUserId)
+                .orElseThrow(() -> new IllegalStateException("Actor not found"));
 
-        // 3️⃣ SINGLE source of truth
-        UserRoleResource urr =
-                UserRoleResourceFactory.create(
-                        targetUser,
-                        role,
-                        resource
-                );
+        try {
+            authorizationService.checkPermission(
+                    actorUserId,
+                    resourceId,
+                    "REMOVE_ROLE"
+            );
 
-        urrRepository.save(urr);
+            UserRoleResource urr =
+                    urrRepository.findByUserIdAndRoleIdAndResourceId(
+                                    targetUserId,
+                                    roleId,
+                                    resourceId
+                            )
+                            .orElseThrow(() ->
+                                    new IllegalStateException("Role assignment not found")
+                            );
+
+            urrRepository.delete(urr);
+
+            auditLogService.log(
+                    resource.getTenant(),
+                    actor,
+                    resource,
+                    "REMOVE_ROLE",
+                    "USER_ROLE_RESOURCE",
+                    null,
+                    "SUCCESS",
+                    "Role removed from user",
+                    null,
+                    null
+            );
+
+        } catch (AccessDeniedException ex) {
+
+            auditLogService.log(
+                    resource.getTenant(),
+                    actor,
+                    resource,
+                    "REMOVE_ROLE",
+                    "USER_ROLE_RESOURCE",
+                    null,
+                    "FAILURE",
+                    ex.getMessage(),
+                    null,
+                    null
+            );
+
+            throw ex;
+        }
     }
 }

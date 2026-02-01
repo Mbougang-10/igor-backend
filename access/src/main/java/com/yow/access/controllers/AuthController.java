@@ -55,15 +55,6 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Si cet email existe, un lien de reinitialisation a ete envoye."));
     }
 
-    /**
-     * POST /api/auth/reset-password
-     * Reinitialiser le mot de passe
-     */
-    @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ActivateAccountRequest request) {
-        authService.resetPassword(request);
-        return ResponseEntity.ok(Map.of("message", "Mot de passe reinitialise avec succes."));
-    }
 
     /**
      * POST /api/auth/users
@@ -120,4 +111,13 @@ public class AuthController {
                 .toList();
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        authService.resetPassword(request);
+        return ResponseEntity.noContent().build();
+    }
+
 }

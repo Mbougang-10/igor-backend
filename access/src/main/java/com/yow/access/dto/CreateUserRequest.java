@@ -2,7 +2,9 @@ package com.yow.access.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 public class CreateUserRequest {
 
     @NotBlank(message = "Username is required")
@@ -12,7 +14,8 @@ public class CreateUserRequest {
     @Email(message = "Invalid email format")
     private String email;
 
-    private Short roleId;
+    @NotBlank(message = "Password hash is required")
+    private String passwordHash;
 
     public CreateUserRequest() {
     }
@@ -33,11 +36,11 @@ public class CreateUserRequest {
         this.email = email;
     }
 
-    public Short getRoleId() {
-        return roleId;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setRoleId(Short roleId) {
-        this.roleId = roleId;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 }

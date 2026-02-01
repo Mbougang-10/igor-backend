@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRoleResourceRepository
@@ -33,5 +34,12 @@ public interface UserRoleResourceRepository
     // Compter les utilisateurs distincts ayant accès à un tenant (via ses ressources)
     @Query("SELECT COUNT(DISTINCT urr.user.id) FROM UserRoleResource urr WHERE urr.resource.tenant.id = :tenantId")
     long countDistinctUsersByTenantId(@Param("tenantId") UUID tenantId);
+
+    Optional<UserRoleResource> findByUserIdAndRoleIdAndResourceId(
+            UUID userId,
+            Short roleId,
+            UUID resourceId
+    );
+
 }
 

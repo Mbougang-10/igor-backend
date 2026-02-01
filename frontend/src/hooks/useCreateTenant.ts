@@ -15,8 +15,13 @@ export function useCreateTenant() {
         name,
         code: generateTenantCode(name),
       });
+
+      // Succès - pas de redirection ici, laisser le composant gérer
+      return { success: true };
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Unknown error');
+      const errorMessage = e?.response?.data?.message || e?.message || 'Erreur inconnue';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }

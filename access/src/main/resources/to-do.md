@@ -174,9 +174,9 @@ UserController -----------(ok)
 
 ResourceController --------(ok)
 
-RoleAssignmentController
+RoleAssignmentController ---------(ok)
 
-AuthController (plus tard)
+AuthController (plus tard) ----(commencé)
 
 📌 Ils font :
 

@@ -40,13 +40,17 @@ public class Resource {
     private Instant createdAt = Instant.now();
 
     // JPA only
-    protected Resource() {
+    public Resource() {
     }
 
     // Getters & Setters
 
     public UUID getId() {
         return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public Tenant getTenant() {
