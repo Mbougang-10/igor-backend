@@ -20,11 +20,17 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final com.yow.access.repositories.RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(
+            UserRepository userRepository,
+            com.yow.access.repositories.RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -34,12 +40,32 @@ public class DataInitializer implements CommandLineRunner {
         log.info("EXÉCUTION DU DATA INITIALIZER");
         log.info("========================================");
 
+        initializeRoles();
         initializeDefaultAdmin();
         logAllUsers();
 
         log.info("========================================");
         log.info("DATA INITIALIZER TERMINÉ");
         log.info("========================================");
+    }
+
+    private void initializeRoles() {
+        createRoleIfNotFound((short) 1, "ADMIN", "GLOBAL");
+        createRoleIfNotFound((short) 2, "USER", "GLOBAL");
+        createRoleIfNotFound((short) 3, "TENANT_ADMIN", "TENANT");
+    }
+
+    private void createRoleIfNotFound(Short id, String name, String scope) {
+        if (roleRepository.findByName(name).isEmpty()) {
+            com.yow.access.entities.Role role = new com.yow.access.entities.Role();
+            role.setId(id);
+            role.setName(name);
+            role.setScope(scope);
+            roleRepository.save(role);
+            log.info("✅ Rôle créé: {} (ID: {}, Scope: {})", name, id, scope);
+        } else {
+            log.info("ℹ️  Le rôle existe déjà: {}", name);
+        }
     }
 
     private void initializeDefaultAdmin() {

@@ -37,7 +37,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/auth/login") ||
                 path.equals("/api/auth/activate") ||
                 path.equals("/api/auth/forgot-password") ||
-                path.equals("/api/auth/reset-password");
+                path.equals("/api/auth/reset-password") ||
+                path.equals("/api/auth/register-tenant");
 
         return isPublicAuthEndpoint ||
                 path.startsWith("/swagger-ui") ||
@@ -74,11 +75,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        java.util.List<String> roles = jwtService.extractRoles(token);
+        
+        java.util.List<org.springframework.security.core.GrantedAuthority> authorities;
+        if (roles != null) {
+            authorities = roles.stream()
+                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())) // Prefixe ROLE_ pour Spring Security
+                    .collect(java.util.stream.Collectors.toList());
+        } else {
+            authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(
                         user,
                         null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                        authorities
                 );
 
         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

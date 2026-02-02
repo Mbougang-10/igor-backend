@@ -15,16 +15,18 @@ public class AuthResponse {
     private UUID userId;
     private String email;
     private String username;
+    private java.util.List<String> roles;
     private boolean mustChangePassword;
 
     public AuthResponse() {
     }
 
-    public AuthResponse(String token, UUID userId, String email, String username, boolean mustChangePassword) {
+    public AuthResponse(String token, UUID userId, String email, String username, java.util.List<String> roles, boolean mustChangePassword) {
         this.token = token;
         this.userId = userId;
         this.email = email;
         this.username = username;
+        this.roles = roles;
         this.mustChangePassword = mustChangePassword;
     }
 
@@ -58,6 +60,14 @@ public class AuthResponse {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public java.util.List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(java.util.List<String> roles) {
+        this.roles = roles;
     }
 
     public boolean isMustChangePassword() {

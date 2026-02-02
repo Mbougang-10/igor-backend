@@ -24,13 +24,14 @@ public class JwtService {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(UUID userId, String email) {
+    public String generateToken(UUID userId, String email, java.util.List<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .claim("roles", roles)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -45,6 +46,12 @@ public class JwtService {
     public String extractEmail(String token) {
         Claims claims = extractAllClaims(token);
         return claims.get("email", String.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public java.util.List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("roles", java.util.List.class);
     }
 
     public boolean isTokenValid(String token) {

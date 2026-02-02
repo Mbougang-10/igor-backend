@@ -45,6 +45,16 @@ public class AuthController {
     }
 
     /**
+     * POST /api/auth/register-tenant
+     * Inscription d'un nouvel utilisateur et création d'une organisation
+     */
+    @PostMapping("/register-tenant")
+    public ResponseEntity<AuthResponse> registerTenant(@Valid @RequestBody RegisterTenantRequest request) {
+        AuthResponse response = authService.registerTenant(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * POST /api/auth/forgot-password
      * Demander la reinitialisation du mot de passe
      */

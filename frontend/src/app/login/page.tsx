@@ -45,14 +45,22 @@ export default function LoginPage() {
         password: loginPassword,
       });
 
-      const { token, userId, email, username } = response.data;
+      const { token, userId, email, username, roles } = response.data;
 
       // Store token and user info
       localStorage.setItem('access_token', token);
       localStorage.setItem('user_id', userId);
       localStorage.setItem('user_email', email);
       localStorage.setItem('user_name', username);
-      localStorage.setItem('userRole', 'admin'); // Default for now
+
+      // Determine initial role context
+      // Note: In a real multi-tenant app, the user might have different roles per tenant.
+      // Here we set a "global" session role for the UI.
+      let userRole = 'user';
+      if (roles && Array.isArray(roles) && roles.includes('ADMIN')) {
+        userRole = 'admin';
+      }
+      localStorage.setItem('userRole', userRole);
 
       // Redirect to dashboard
       router.push('/dashboard');
@@ -64,12 +72,12 @@ export default function LoginPage() {
         err?.message ||
         'Email ou mot de passe incorrect';
       setError(message);
-    }finally {
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Signup - Create organization (to be implemented with backend)
+  // Signup - Create organization
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -82,11 +90,36 @@ export default function LoginPage() {
     }
 
     try {
-      // For now, show that signup needs backend implementation
-      alert('La création d\'organisation nécessite une implémentation backend supplémentaire. Utilisez la connexion avec les identifiants existants.');
-      setIsLoading(false);
+      const response = await api.post('/api/auth/register-tenant', {
+        email: signupEmail,
+        password: signupPassword,
+        firstName: firstName,
+        lastName: lastName,
+        organizationName: orgName
+      });
+
+      const { token, userId, email, username, roles } = response.data;
+
+      // Store token and user info
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('user_id', userId);
+      localStorage.setItem('user_email', email);
+      localStorage.setItem('user_name', username);
+
+      // Set role (Admin since they created the tenant)
+      let userRole = 'user';
+      if (roles && Array.isArray(roles) && roles.includes('ADMIN')) {
+        userRole = 'admin';
+      }
+      localStorage.setItem('userRole', userRole);
+
+      // Redirect to dashboard
+      router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création');
+      console.error('Signup error:', err);
+      const message = err?.message || 'Erreur lors de la création de l\'organisation';
+      setError(message);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -134,7 +167,7 @@ export default function LoginPage() {
                     <Input
                       id="password-login"
                       type="password"
-                      placeholder="admin123"
+                      placeholder="Admin123!"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required
@@ -154,7 +187,7 @@ export default function LoginPage() {
                 <div className="text-center text-sm text-gray-500 mt-4 p-3 bg-gray-50 rounded">
                   <p className="font-medium">Identifiants de test :</p>
                   <p>Email: admin@example.com</p>
-                  <p>Mot de passe: admin123</p>
+                  <p>Mot de passe: Admin123!</p>
                 </div>
               </form>
             </TabsContent>
