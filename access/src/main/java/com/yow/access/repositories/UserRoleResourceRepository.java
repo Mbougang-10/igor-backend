@@ -41,5 +41,7 @@ public interface UserRoleResourceRepository
             UUID resourceId
     );
 
+    @Query("SELECT DISTINCT urr.user FROM UserRoleResource urr WHERE urr.resource.tenant.id = :tenantId")
+    List<com.yow.access.entities.AppUser> findUsersByTenantId(@Param("tenantId") UUID tenantId);
 }
 

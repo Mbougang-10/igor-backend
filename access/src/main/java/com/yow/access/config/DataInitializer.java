@@ -21,16 +21,19 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final com.yow.access.repositories.RoleRepository roleRepository;
+    private final com.yow.access.repositories.PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public DataInitializer(
             UserRepository userRepository,
             com.yow.access.repositories.RoleRepository roleRepository,
+            com.yow.access.repositories.PermissionRepository permissionRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -50,9 +53,29 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeRoles() {
+        // 1. Create Roles
         createRoleIfNotFound((short) 1, "ADMIN", "GLOBAL");
         createRoleIfNotFound((short) 2, "USER", "GLOBAL");
         createRoleIfNotFound((short) 3, "TENANT_ADMIN", "TENANT");
+
+        // 2. Create Permissions
+        createPermissionIfNotFound((short) 10, "RESOURCE_CREATE", "Create child resources");
+        createPermissionIfNotFound((short) 11, "RESOURCE_READ", "View resources");
+        createPermissionIfNotFound((short) 12, "RESOURCE_UPDATE", "Update resources");
+        createPermissionIfNotFound((short) 13, "RESOURCE_DELETE", "Delete resources");
+        createPermissionIfNotFound((short) 14, "RESOURCE_MOVE", "Move resources");
+        
+        createPermissionIfNotFound((short) 20, "ASSIGN_ROLE", "Assign roles to users");
+        createPermissionIfNotFound((short) 21, "REMOVE_ROLE", "Remove roles from users");
+        
+        createPermissionIfNotFound((short) 30, "USER_CREATE", "Create new users");
+        createPermissionIfNotFound((short) 31, "USER_READ", "View users");
+        createPermissionIfNotFound((short) 32, "USER_UPDATE", "Update users");
+        createPermissionIfNotFound((short) 33, "USER_DELETE", "Delete users");
+
+        // 3. Assign All Permissions to TENANT_ADMIN
+        assignAllPermissionsToRole("TENANT_ADMIN");
+        assignAllPermissionsToRole("ADMIN"); // Global admin gets everything too
     }
 
     private void createRoleIfNotFound(Short id, String name, String scope) {
@@ -66,6 +89,34 @@ public class DataInitializer implements CommandLineRunner {
         } else {
             log.info("ℹ️  Le rôle existe déjà: {}", name);
         }
+    }
+
+    private void createPermissionIfNotFound(Short id, String name, String description) {
+        if (permissionRepository.findByName(name).isEmpty()) {
+            com.yow.access.entities.Permission permission = new com.yow.access.entities.Permission();
+            permission.setId(id);
+            permission.setName(name);
+            permission.setDescription(description);
+            permissionRepository.save(permission);
+            log.info("✅ Permission créée: {} (ID: {})", name, id);
+        }
+    }
+
+    private void assignAllPermissionsToRole(String roleName) {
+        roleRepository.findByName(roleName).ifPresent(role -> {
+            java.util.List<com.yow.access.entities.Permission> allPermissions = permissionRepository.findAll();
+            boolean changed = false;
+            for (com.yow.access.entities.Permission p : allPermissions) {
+                if (!role.getPermissions().contains(p)) {
+                    role.getPermissions().add(p);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                roleRepository.save(role);
+                log.info("✅ Permissions assignées au rôle: {}", roleName);
+            }
+        });
     }
 
     private void initializeDefaultAdmin() {

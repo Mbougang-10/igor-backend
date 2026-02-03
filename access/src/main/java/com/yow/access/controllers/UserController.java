@@ -77,4 +77,15 @@ public class UserController {
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+    /* ============================
+       GET USERS BY TENANT
+       ============================ */
+    @GetMapping("/tenant/{tenantId}")
+    public ResponseEntity<java.util.List<AppUser>> getUsersByTenant(
+            @PathVariable UUID tenantId
+    ) {
+        // En vrai, il faudrait ajouter une pagination
+        return ResponseEntity.ok(userService.getUsersByTenant(tenantId));
+    }
 }

@@ -33,7 +33,7 @@ public class Permission {
     private String description;
 
     // JPA only
-    protected Permission() {
+    public Permission() {
     }
 
     // Getters & Setters

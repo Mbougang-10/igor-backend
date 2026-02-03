@@ -83,8 +83,8 @@ public class AuthService {
         userRoleResourceRepository.save(urr);
 
         // 6. Génération Token et Réponse
-        // L'admin a le rôle ADMIN (global pour le contexte tenant)
-        java.util.List<String> roles = java.util.Collections.singletonList("ADMIN");
+        // L'admin du tenant a le rôle TENANT_ADMIN
+        java.util.List<String> roles = java.util.Collections.singletonList("TENANT_ADMIN");
         String token = jwtService.generateToken(adminUser.getId(), adminUser.getEmail(), roles);
 
         log.info("Tenant '{}' créé avec succès par {}", tenant.getName(), adminUser.getEmail());

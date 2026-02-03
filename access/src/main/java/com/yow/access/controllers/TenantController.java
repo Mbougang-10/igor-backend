@@ -94,14 +94,23 @@ public class TenantController {
     public ResponseEntity<List<TenantResponse>> getTenants() {
 
         UUID userId = userContext.getUserId();
+        
+        // Vérifier si l'utilisateur est SUPER_ADMIN (Role ADMIN global)
+        boolean isSuperAdmin = urrRepository.findAllByUserId(userId).stream()
+                .anyMatch(urr -> urr.getRole().getName().equals("ADMIN"));
 
-        List<TenantResponse> tenants =
-                tenantService.getTenantsAccessibleByUser(userId)
-                        .stream()
-                        .map(TenantResponse::fromEntity)
-                        .toList();
+        List<Tenant> tenants;
+        if (isSuperAdmin) {
+            tenants = tenantService.getAllTenants();
+        } else {
+            tenants = tenantService.getTenantsAccessibleByUser(userId);
+        }
 
-        return ResponseEntity.ok(tenants);
+        List<TenantResponse> response = tenants.stream()
+                .map(TenantResponse::fromEntity)
+                .toList();
+
+        return ResponseEntity.ok(response);
     }
 
     /* ============================

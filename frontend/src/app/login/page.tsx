@@ -57,8 +57,10 @@ export default function LoginPage() {
       // Note: In a real multi-tenant app, the user might have different roles per tenant.
       // Here we set a "global" session role for the UI.
       let userRole = 'user';
-      if (roles && Array.isArray(roles) && roles.includes('ADMIN')) {
-        userRole = 'admin';
+      if (roles && Array.isArray(roles)) {
+        if (roles.includes('ADMIN') || roles.includes('TENANT_ADMIN')) {
+          userRole = 'admin';
+        }
       }
       localStorage.setItem('userRole', userRole);
 
@@ -108,8 +110,10 @@ export default function LoginPage() {
 
       // Set role (Admin since they created the tenant)
       let userRole = 'user';
-      if (roles && Array.isArray(roles) && roles.includes('ADMIN')) {
-        userRole = 'admin';
+      if (roles && Array.isArray(roles)) {
+        if (roles.includes('ADMIN') || roles.includes('TENANT_ADMIN')) {
+          userRole = 'admin';
+        }
       }
       localStorage.setItem('userRole', userRole);
 

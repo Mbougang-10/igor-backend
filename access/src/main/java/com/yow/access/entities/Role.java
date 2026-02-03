@@ -3,6 +3,8 @@ package com.yow.access.entities;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,6 +18,8 @@ import java.util.Set;
  * Date: 2025-12-30
  */
 @Entity
+@Setter
+@Getter
 @Builder
 @AllArgsConstructor
 @Table(name = "role")
@@ -44,6 +48,9 @@ public class Role {
     }
 
     // Getters & Setters
+
+
+
 
     public Short getId() {
         return id;

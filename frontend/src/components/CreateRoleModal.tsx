@@ -1,88 +1,184 @@
-// src/components/CreateRoleModal.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
+import { api } from '@/services/api';
+import { Loader2 } from 'lucide-react';
 
-const allPermissions = [
-  { key: 'create_department', label: 'Créer un département' },
-  { key: 'edit_department', label: 'Modifier un département' },
-  { key: 'delete_department', label: 'Supprimer un département' },
-  { key: 'create_user', label: 'Créer un utilisateur' },
-  { key: 'edit_user', label: 'Modifier un utilisateur' },
-  { key: 'delete_user', label: 'Supprimer un utilisateur' },
-  { key: 'view_stats', label: 'Voir les statistiques' },
-  { key: 'manage_roles', label: 'Gérer les rôles et permissions' },
-];
+interface Permission {
+  id: number;
+  name: string;
+  description: string;
+}
 
 interface CreateRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRoleCreated?: () => void;
 }
 
-export default function CreateRoleModal({ open, onOpenChange }: CreateRoleModalProps) {
+export default function CreateRoleModal({
+  open,
+  onOpenChange,
+  onRoleCreated,
+}: CreateRoleModalProps) {
   const [roleName, setRoleName] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [scope, setScope] = useState<'GLOBAL' | 'TENANT'>('TENANT');
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
 
-  const togglePermission = (key: string) => {
-    setSelectedPermissions(prev =>
-      prev.includes(key)
-        ? prev.filter(p => p !== key)
-        : [...prev, key]
+  useEffect(() => {
+    if (open) {
+      fetchPermissions();
+    }
+  }, [open]);
+
+  async function fetchPermissions() {
+    try {
+      setLoadingPermissions(true);
+      const response = await api.get<Permission[]>('/api/permissions');
+      setPermissions(response.data);
+    } catch (err) {
+      console.error('Erreur chargement permissions:', err);
+    } finally {
+      setLoadingPermissions(false);
+    }
+  }
+
+  const handleTogglePermission = (permId: number) => {
+    setSelectedPermissions((prev) =>
+      prev.includes(permId)
+        ? prev.filter((id) => id !== permId)
+        : [...prev, permId]
     );
+  };
+
+  const handleSubmit = async () => {
+    if (!roleName.trim()) {
+      alert('Veuillez saisir un nom de rôle');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.post('/api/roles', {
+        name: roleName,
+        scope: scope,
+        permissionIds: selectedPermissions,
+      });
+
+      // Reset form
+      setRoleName('');
+      setSelectedPermissions([]);
+      setScope('TENANT');
+
+      onOpenChange(false);
+      if (onRoleCreated) {
+        onRoleCreated();
+      }
+    } catch (err: any) {
+      console.error('Erreur création rôle:', err);
+      alert(err?.message || 'Erreur lors de la création du rôle');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Créer un rôle personnalisé</DialogTitle>
-          <DialogDescription>
-            Définissez un nouveau rôle et choisissez ses permissions.
-          </DialogDescription>
+          <DialogTitle>Créer un nouveau rôle</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="roleName">Nom du rôle</Label>
-            <Input 
-              id="roleName" 
-              placeholder="ex: Responsable RH, Modérateur, Consultant..." 
+        <div className="space-y-6 py-4">
+          {/* Role Name */}
+          <div className="space-y-2">
+            <Label htmlFor="roleName">Nom du rôle *</Label>
+            <Input
+              id="roleName"
+              placeholder="Ex: MANAGER, DEVELOPER, VIEWER..."
               value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
+              onChange={(e) => setRoleName(e.target.value.toUpperCase())}
             />
           </div>
 
-          <div className="grid gap-4">
-            <Label>Permissions</Label>
-            <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto p-4 border rounded-lg">
-              {allPermissions.map((perm) => (
-                <div key={perm.key} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={perm.key}
-                    checked={selectedPermissions.includes(perm.key)}
-                    onCheckedChange={() => togglePermission(perm.key)}
-                  />
-                  <label
-                    htmlFor={perm.key}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {perm.label}
-                  </label>
-                </div>
-              ))}
+          {/* Scope */}
+          <div className="space-y-2">
+            <Label>Portée du rôle</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="TENANT"
+                  checked={scope === 'TENANT'}
+                  onChange={() => setScope('TENANT')}
+                  className="w-4 h-4"
+                />
+                <span>Tenant (Organisation)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="GLOBAL"
+                  checked={scope === 'GLOBAL'}
+                  onChange={() => setScope('GLOBAL')}
+                  className="w-4 h-4"
+                />
+                <span>Global (Système)</span>
+              </label>
             </div>
+          </div>
+
+          {/* Permissions */}
+          <div className="space-y-2">
+            <Label>Permissions</Label>
+            {loadingPermissions ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <div className="border rounded-lg p-4 space-y-3 max-h-64 overflow-y-auto">
+                {permissions.length === 0 ? (
+                  <p className="text-sm text-gray-500">Aucune permission disponible</p>
+                ) : (
+                  permissions.map((perm) => (
+                    <label
+                      key={perm.id}
+                      className="flex items-start gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                    >
+                      <Checkbox
+                        checked={selectedPermissions.includes(perm.id)}
+                        onCheckedChange={() => handleTogglePermission(perm.id)}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{perm.name}</p>
+                        {perm.description && (
+                          <p className="text-xs text-gray-500">{perm.description}</p>
+                        )}
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
+            <p className="text-xs text-gray-500">
+              {selectedPermissions.length} permission(s) sélectionnée(s)
+            </p>
           </div>
         </div>
 
@@ -90,13 +186,15 @@ export default function CreateRoleModal({ open, onOpenChange }: CreateRoleModalP
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={() => {
-            if (roleName && selectedPermissions.length > 0) {
-              alert(`Rôle "${roleName}" créé avec ${selectedPermissions.length} permissions !`);
-              onOpenChange(false);
-            }
-          }}>
-            Créer le rôle
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Création...
+              </>
+            ) : (
+              'Créer le rôle'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

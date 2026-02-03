@@ -199,4 +199,17 @@ public class UserService {
             throw ex;
         }
     }
+
+    /* ============================
+       GET USERS BY TENANT
+       ============================ */
+    @Transactional(readOnly = true)
+    public java.util.List<AppUser> getUsersByTenant(UUID tenantId) {
+        // Cette requête pourrait être optimisée dans le repository
+        // Pour l'instant on réutilise urrRepository pour trouver les userIds
+        // puis on fetch les users.
+        
+        // Ou mieux, on ajoute une méthode custom dans UserRepository/URRRepository
+        return urrRepository.findUsersByTenantId(tenantId);
+    }
 }

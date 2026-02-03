@@ -1,12 +1,13 @@
 // src/app/(app)/departments/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus } from 'lucide-react';
+import { Building2, Plus, Loader2 } from 'lucide-react';
 import CreateDepartmentModal from '@/components/CreateDepartmentModal';
 import HierarchyTree from '@/components/HierarchyTree';
+import SuperAdminDashboard from '@/components/dashboards/SuperAdminDashboard';
 
 interface Department {
   id: string;
@@ -16,6 +17,17 @@ interface Department {
 export default function DepartmentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState<Department | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Vérification du Super Admin (basé sur email pour ce MVP)
+    const email = localStorage.getItem('user_email');
+    if (email === 'admin@example.com') {
+      setIsSuperAdmin(true);
+    }
+    setLoading(false);
+  }, []);
 
   const handleCreateDepartment = () => {
     setSelectedParent(null); // Département principal
@@ -27,6 +39,20 @@ export default function DepartmentsPage() {
     setModalOpen(true);
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  // Si Super Admin, on affiche la vue globale des organisations
+  if (isSuperAdmin) {
+    return <SuperAdminDashboard />;
+  }
+
+  // Sinon, vue standard pour Tenant Admin (Hiérarchie)
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -60,10 +86,10 @@ export default function DepartmentsPage() {
       </Card>
 
       {/* Modal unique — s'adapte au parent sélectionné */}
-      <CreateDepartmentModal 
-        open={modalOpen} 
-        onOpenChange={setModalOpen} 
-        parentDepartment={selectedParent} 
+      <CreateDepartmentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        parentDepartment={selectedParent}
       />
     </div>
   );

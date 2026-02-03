@@ -120,4 +120,7 @@ public class TenantService {
                 .distinct()
                 .toList();
     }
+    public List<Tenant> getAllTenants() {
+        return tenantRepository.findAll();
+    }
 }
