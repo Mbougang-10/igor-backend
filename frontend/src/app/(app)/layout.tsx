@@ -1,13 +1,23 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/ui/Sidebar';
-import { verifyAuth } from '@/lib/auth-utils';
 
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // TODO: Ajouter vérification d'authentification ici
-  // const isAuthenticated = verifyAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Vérifier l'authentification côté client
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, [router]);
 
   return (
     <div className="flex h-screen bg-gray-100">
