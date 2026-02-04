@@ -88,4 +88,16 @@ public class UserController {
         // En vrai, il faudrait ajouter une pagination
         return ResponseEntity.ok(userService.getUsersByTenant(tenantId));
     }
+
+    /* ============================
+       SEARCH USER BY EMAIL
+       ============================ */
+    @GetMapping("/search")
+    public ResponseEntity<AppUser> getUserByEmail(@RequestParam String email) {
+        // TODO: Restreindre qui peut chercher ? Pour l'instant on laisse ouvert aux utilisateurs authentifiés
+        // pour faciliter l'invitation.
+        return userService.findByEmail(email)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

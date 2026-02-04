@@ -127,6 +127,50 @@ public class AuthService {
     }
 
     /**
+     * Enregistre un nouvel utilisateur simple (sans création de tenant)
+     * L'utilisateur pourra ensuite être invité à rejoindre des organisations
+     */
+    @Transactional
+    public AuthResponse registerUser(RegisterUserRequest request) {
+        log.debug("Enregistrement d'un nouvel utilisateur: {}", request.getEmail());
+
+        // Vérifications préalables
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Un utilisateur avec cet email existe déjà.");
+        }
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Ce nom d'utilisateur est déjà pris.");
+        }
+
+        // Création de l'utilisateur
+        AppUser newUser = new AppUser();
+        newUser.setUsername(request.getUsername());
+        newUser.setEmail(request.getEmail());
+        newUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        newUser.setEnabled(true);
+        newUser.setAccountActivated(true);
+        newUser.setMustChangePassword(false);
+        newUser.setCreatedAt(Instant.now());
+
+        userRepository.save(newUser);
+
+        log.info("Utilisateur créé avec succès: {}", newUser.getEmail());
+
+        // Générer un token JWT pour connexion automatique
+        // L'utilisateur n'a aucun rôle pour le moment, il devra être invité à une organisation
+        String token = jwtService.generateToken(newUser.getId(), newUser.getEmail(), Collections.emptyList());
+
+        return new AuthResponse(
+                token,
+                newUser.getId(),
+                newUser.getEmail(),
+                newUser.getUsername(),
+                Collections.emptyList() // Pas de rôles initialement
+        );
+    }
+
+    /**
      * Authentifie un utilisateur et retourne un token JWT
      */
     @Transactional(readOnly = true)

@@ -212,4 +212,8 @@ public class UserService {
         // Ou mieux, on ajoute une méthode custom dans UserRepository/URRRepository
         return urrRepository.findUsersByTenantId(tenantId);
     }
+    @Transactional(readOnly = true)
+    public java.util.Optional<AppUser> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }

@@ -44,6 +44,17 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+
+    /**
+     * POST /api/auth/register
+     * Inscription simple d'un nouvel utilisateur (sans création d'organisation)
+     */
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUserRequest request) {
+        AuthResponse response = authService.registerUser(request);
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * POST /api/auth/register-tenant
      * Inscription d'un nouvel utilisateur et création d'une organisation

@@ -1,4 +1,4 @@
-                        'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import {
@@ -23,12 +23,16 @@ import {
 import { api } from '@/services/api';
 import Link from 'next/link';
 
+// ... (imports remain the same)
+
 interface Tenant {
     id: string;
     name: string;
     code: string;
     status: string;
     createdAt: string;
+    ownerName?: string;
+    ownerEmail?: string;
 }
 
 interface TenantStats {
@@ -53,7 +57,8 @@ export default function SuperAdminDashboard() {
     async function fetchTenants() {
         try {
             setLoading(true);
-            const response = await api.get<Tenant[]>('/api/tenants');
+            // Utiliser le nouvel endpoint qui retourne aussi les propriétaires
+            const response = await api.get<Tenant[]>('/api/tenants/summary');
             const tenantsData = response.data;
 
             // Récupérer les stats pour chaque tenant
@@ -78,8 +83,16 @@ export default function SuperAdminDashboard() {
             const totalR = tenantsWithStats.reduce((sum, t) => sum + (t.stats?.resourceCount || 0), 0);
             setTotalUsers(totalU);
             setTotalResources(totalR);
-        } catch (err) {
-            console.error('Erreur lors du chargement des tenants:', err);
+        } catch (err: any) {
+            console.error('Erreur détaillée lors du chargement des tenants:', {
+                message: err.message,
+                status: err.status,
+                data: err.data,
+                original: err
+            });
+            if (err.status === 403) {
+                alert("Accès refusé : Vous n'avez pas les droits de Super Administrateur.");
+            }
         } finally {
             setLoading(false);
         }
@@ -107,7 +120,7 @@ export default function SuperAdminDashboard() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="border-l-4 border-purple-600">
+                <Card className="border-l-4 border-purple-600 shadow-md">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-gray-600">
                             Total Organisations
@@ -122,7 +135,7 @@ export default function SuperAdminDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-blue-600">
+                <Card className="border-l-4 border-blue-600 shadow-md">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-gray-600">
                             Total Utilisateurs
@@ -137,7 +150,7 @@ export default function SuperAdminDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-green-600">
+                <Card className="border-l-4 border-green-600 shadow-md">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-gray-600">
                             Total Ressources
@@ -152,7 +165,7 @@ export default function SuperAdminDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-orange-600">
+                <Card className="border-l-4 border-orange-600 shadow-md">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-gray-600">
                             Moyenne par Org
@@ -171,86 +184,107 @@ export default function SuperAdminDashboard() {
             </div>
 
             {/* Tenants Table */}
-            <Card>
-                <CardHeader>
+            <Card className="shadow-lg border-none">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-white">
                     <CardTitle className="flex items-center gap-3">
                         <Building2 className="h-6 w-6 text-purple-600" />
-                        Liste des Organisations
+                        Liste des Organisations et Propriétaires
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
+                <CardContent className="p-0">
+                    <div className="border-t">
                         <Table>
-                            <TableHeader>
+                            <TableHeader className="bg-gray-50">
                                 <TableRow>
-                                    <TableHead>Organisation</TableHead>
-                                    <TableHead>Code</TableHead>
+                                    <TableHead className="py-4">Organisation</TableHead>
+                                    <TableHead>Propriétaire</TableHead>
+                                    <TableHead className="text-center">Stats</TableHead>
                                     <TableHead>Statut</TableHead>
-                                    <TableHead className="text-center">Utilisateurs</TableHead>
-                                    <TableHead className="text-center">Ressources</TableHead>
                                     <TableHead>Date de création</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right pr-6">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {tenants.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                                            Aucune organisation trouvée
+                                        <TableCell colSpan={6} className="text-center py-12 text-gray-500">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Users className="h-8 w-8 text-gray-300" />
+                                                <p>Aucune organisation trouvée</p>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     tenants.map((tenant) => (
-                                        <TableRow key={tenant.id}>
+                                        <TableRow key={tenant.id} className="hover:bg-blue-50/50 transition-colors">
                                             <TableCell className="font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="h-4 w-4 text-gray-500" />
-                                                    {tenant.name}
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2 text-base text-gray-900">
+                                                        <Building2 className="h-4 w-4 text-purple-600" />
+                                                        {tenant.name}
+                                                    </div>
+                                                    <span className="text-xs text-gray-500 font-mono mt-1 ml-6 bg-gray-100 w-fit px-1.5 py-0.5 rounded">
+                                                        Code: {tenant.code}
+                                                    </span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                                                    {tenant.code}
-                                                </span>
+                                                {tenant.ownerName ? (
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-1.5 font-medium text-gray-900">
+                                                            <Users className="h-3.5 w-3.5 text-blue-500" />
+                                                            {tenant.ownerName}
+                                                        </div>
+                                                        <span className="text-xs text-gray-500 ml-5">
+                                                            {tenant.ownerEmail}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-sm text-gray-400 italic">Non assigné</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex flex-col gap-1 items-center text-xs">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                                                        <Users className="h-3 w-3" />
+                                                        {tenant.stats?.userCount || 0} users
+                                                    </span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                                                        <Building2 className="h-3 w-3" />
+                                                        {tenant.stats?.resourceCount || 0} res.
+                                                    </span>
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <span
-                                                    className={`px-2 py-1 rounded-full text-xs font-semibold ${tenant.status === 'ACTIVE'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-800'
+                                                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${tenant.status === 'ACTIVE'
+                                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                                        : 'bg-gray-50 text-gray-700 border-gray-200'
                                                         }`}
                                                 >
-                                                    {tenant.status}
+                                                    {tenant.status || 'INCONNU'}
                                                 </span>
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <Users className="h-4 w-4 text-blue-600" />
-                                                    <span className="font-semibold">{tenant.stats?.userCount || 0}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <Building2 className="h-4 w-4 text-green-600" />
-                                                    <span className="font-semibold">{tenant.stats?.resourceCount || 0}</span>
-                                                </div>
                                             </TableCell>
                                             <TableCell className="text-gray-500 text-sm">
                                                 {tenant.createdAt
-                                                    ? new Date(tenant.createdAt).toLocaleDateString('fr-FR')
+                                                    ? new Date(tenant.createdAt).toLocaleDateString('fr-FR', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })
                                                     : '-'}
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right pr-6">
                                                 <div className="flex gap-2 justify-end">
                                                     <Link href={`/tenants/${tenant.id}`}>
-                                                        <Button variant="outline" size="sm">
-                                                            <Eye className="h-4 w-4 mr-1" />
-                                                            Voir
+                                                        <Button variant="outline" size="sm" className="h-8 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200">
+                                                            <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                                            Voire
                                                         </Button>
                                                     </Link>
                                                     <Link href={`/tenants/${tenant.id}/stats`}>
-                                                        <Button variant="secondary" size="sm">
-                                                            <BarChart3 className="h-4 w-4 mr-1" />
+                                                        <Button variant="secondary" size="sm" className="h-8 bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                                            <BarChart3 className="h-3.5 w-3.5 mr-1" />
                                                             Stats
                                                         </Button>
                                                     </Link>

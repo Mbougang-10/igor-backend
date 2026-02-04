@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -279,6 +280,15 @@ export default function LoginPage() {
                         </Tabs>
                     </CardHeader>
                 </Card>
+
+                <div className="text-center mt-6">
+                    <p className="text-sm text-slate-600">
+                        Pas encore de compte ?{' '}
+                        <Link href="/register" className="text-blue-600 hover:text-blue-700 font-semibold hover:underline">
+                            Créer un compte gratuit
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );

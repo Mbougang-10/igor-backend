@@ -123,4 +123,36 @@ public class TenantService {
     public List<Tenant> getAllTenants() {
         return tenantRepository.findAll();
     }
+
+    /* ============================
+       SUPER ADMIN
+       ============================ */
+    @Transactional(readOnly = true)
+    public List<com.yow.access.dto.TenantSummaryDTO> getAllTenantsWithOwners() {
+        List<Object[]> results = tenantRepository.findAllTenantsWithOwnersRaw();
+
+        // On utilise une map pour dédupliquer les tenants (au cas où il y ait plusieurs admins)
+        // On garde le premier admin trouvé
+        java.util.Map<UUID, com.yow.access.dto.TenantSummaryDTO> tenantMap = new java.util.LinkedHashMap<>();
+
+        for (Object[] row : results) {
+            UUID id = (UUID) row[0];
+            if (!tenantMap.containsKey(id)) {
+                String name = (String) row[1];
+                String code = (String) row[2];
+                String status = (String) row[3];
+                // Conversion Timestamp -> Instant
+                java.sql.Timestamp ts = (java.sql.Timestamp) row[4];
+                java.time.Instant createdAt = ts != null ? ts.toInstant() : null;
+                String ownerName = (String) row[5];
+                String ownerEmail = (String) row[6];
+
+                tenantMap.put(id, new com.yow.access.dto.TenantSummaryDTO(
+                        id, name, code, status, createdAt, ownerName, ownerEmail
+                ));
+            }
+        }
+
+        return new java.util.ArrayList<>(tenantMap.values());
+    }
 }

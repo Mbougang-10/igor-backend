@@ -1,8 +1,13 @@
 package com.yow.access.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 import java.util.List;
 
+@Builder
 public class AuthResponse {
     private String token;
     private UUID userId;
@@ -20,6 +25,14 @@ public class AuthResponse {
         this.username = username;
         this.roles = roles;
         this.mustChangePassword = mustChangePassword;
+    }
+
+    public AuthResponse(String token, UUID userId, String email, String username, List<String> roles) {
+        this.token = token;
+        this.userId = userId;
+        this.email = email;
+        this.username = username;
+        this.roles = roles;
     }
 
     // Builder-like pattern
