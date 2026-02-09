@@ -112,4 +112,34 @@ public class UserController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /* ============================
+       GET USER ROLES
+       ============================ */
+    @GetMapping("/{userId}/roles")
+    public ResponseEntity<java.util.List<com.yow.access.dto.UserRoleDTO>> getUserRoles(@PathVariable UUID userId) {
+        // TODO: Check if requesting user has right to view roles of target user
+        return ResponseEntity.ok(userService.getUserRoles(userId));
+    }
+
+    /* ============================
+       REMOVE ROLE
+       ============================ */
+    @DeleteMapping("/{userId}/roles/{roleId}")
+    public ResponseEntity<Void> removeRole(
+            @PathVariable UUID userId,
+            @PathVariable Short roleId,
+            @RequestParam UUID resourceId
+    ) {
+        UUID actorUserId = userContext.getUserId();
+
+        userService.removeRole(
+                actorUserId,
+                userId,
+                roleId,
+                resourceId
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

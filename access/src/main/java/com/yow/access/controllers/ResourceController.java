@@ -18,13 +18,16 @@ import java.util.UUID;
 public class ResourceController {
 
     private final ResourceService resourceService;
+    private final com.yow.access.services.AuthorizationService authorizationService;
     private final AuthenticatedUserContext userContext;
 
     public ResourceController(
             ResourceService resourceService,
+            com.yow.access.services.AuthorizationService authorizationService,
             AuthenticatedUserContext userContext
     ) {
         this.resourceService = resourceService;
+        this.authorizationService = authorizationService;
         this.userContext = userContext;
     }
 
@@ -114,6 +117,19 @@ public class ResourceController {
     ) {
         return ResponseEntity.ok(
                 resourceService.countResourcesByTenant(tenantId)
+        );
+    }
+
+    /**
+     * GET EFFECTIVE PERMISSIONS
+     * Get the permissions the current user has on a specific resource.
+     */
+    @GetMapping("/{resourceId}/permissions")
+    public ResponseEntity<java.util.Set<String>> getPermissions(
+            @PathVariable UUID resourceId
+    ) {
+        return ResponseEntity.ok(
+                authorizationService.getEffectivePermissions(userContext.getUserId(), resourceId)
         );
     }
 }

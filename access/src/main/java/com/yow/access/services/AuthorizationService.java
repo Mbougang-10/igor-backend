@@ -144,4 +144,74 @@ public class AuthorizationService {
         System.out.println("DEBUG: End of hierarchy reached. Access denied.");
         return false; // No matching permission found in hierarchy
     }
+    /**
+     * Get all effective permissions for a user on a given resource.
+     * Walks up the hierarchy and aggregates permissions.
+     */
+    public Set<String> getEffectivePermissions(UUID userId, UUID resourceId) {
+        Set<String> permissions = new HashSet<>();
+        
+        Resource target = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new IllegalStateException("Resource not found"));
+
+        List<UserRoleResource> bindings = urrRepository.findAllByUserId(userId);
+        if (bindings == null || bindings.isEmpty()) {
+            return permissions;
+        }
+
+        // Check for ADMIN (Super Admin)
+        boolean isAdmin = bindings.stream().anyMatch(urr -> urr.getRole().getName().equals("ADMIN"));
+        if (isAdmin) {
+            // Return ALL known permissions? Or a special "ALL" flag?
+            // For now, let's return a set of all standard permissions defined in Permissions class
+            // But since Permissions class fields are static final, we can't iterate them easily without reflection.
+            // Let's just return a special permission "ADMIN" which frontend understands as all-access
+            permissions.add("ADMIN"); 
+            // Also add standard ones for UI checks that look for specific strings
+            permissions.add("RESOURCE_CREATE");
+            permissions.add("RESOURCE_READ");
+            permissions.add("RESOURCE_DELETE");
+            permissions.add("RESOURCE_MOVE");
+            permissions.add("USER_CREATE");
+            permissions.add("ASSIGN_ROLE");
+            permissions.add("REMOVE_ROLE");
+            return permissions;
+        }
+
+        Resource current = target;
+        Set<UUID> visitedResources = new HashSet<>();
+        boolean isTenantAdmin = false;
+
+        // Walk up
+        while (current != null) {
+            if (visitedResources.contains(current.getId())) break;
+            visitedResources.add(current.getId());
+
+            for (UserRoleResource urr : bindings) {
+                if (urr.getResource().getId().equals(current.getId())) {
+                     // Collect all permissions from this role
+                     urr.getRole().getPermissions().forEach(p -> permissions.add(p.getName()));
+                     
+                     // Helper: if role is TENANT_ADMIN, grant all relevant tenant permissions
+                     if (urr.getRole().getName().equals("TENANT_ADMIN")) {
+                         isTenantAdmin = true;
+                     }
+                }
+            }
+            current = current.getParent();
+        }
+        
+        if (isTenantAdmin) {
+            permissions.add("RESOURCE_CREATE");
+            permissions.add("RESOURCE_READ");
+            permissions.add("RESOURCE_DELETE");
+            permissions.add("RESOURCE_MOVE");
+            permissions.add("USER_CREATE");
+            permissions.add("ASSIGN_ROLE");
+            permissions.add("REMOVE_ROLE");
+            permissions.add("TENANT_READ");
+        }
+
+        return permissions;
+    }
 }

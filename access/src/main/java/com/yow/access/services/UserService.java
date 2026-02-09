@@ -223,4 +223,17 @@ public class UserService {
     public java.util.Optional<AppUser> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<com.yow.access.dto.UserRoleDTO> getUserRoles(UUID userId) {
+        return urrRepository.findAllByUserIdWithResourceAndTenant(userId).stream()
+                .map(urr -> new com.yow.access.dto.UserRoleDTO(
+                        urr.getRole().getId(),
+                        urr.getRole().getName(),
+                        urr.getResource().getId(),
+                        urr.getResource().getName(),
+                        urr.getResource().getType()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
 }
